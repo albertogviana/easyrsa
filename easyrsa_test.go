@@ -2,6 +2,7 @@ package easyrsa
 
 import (
 	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -42,5 +43,34 @@ func (e *EasyRSATestSuite) Test_NewEasyRSAScriptDoesNotExists() {
 	_, err := NewEasyRSA()
 	e.Error(err, "stat /tmp/easy-rsa-without-bin/easyrsa: no such file or directory")
 	os.Unsetenv(EasyRSABinDir)
+	os.RemoveAll(dir)
+}
+
+func (e *EasyRSATestSuite) Test_InitPKI() {
+	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
+	os.Setenv(EasyRSABatch, "2")
+
+	dir := "/tmp/easy-rsa-pki"
+	os.Mkdir(dir, 0755)
+	os.Setenv(EasyRSAPKIDir, dir)
+
+	easyRSA, err := NewEasyRSA()
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "reqs"))
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "private"))
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAPKIDir)
+	os.Unsetenv(EasyRSABatch)
 	os.RemoveAll(dir)
 }
