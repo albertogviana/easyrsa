@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 )
 
 // EasyRSABinDir should point to the Easy-RSA top-level dir, where the easyrsa script is located.
@@ -17,12 +18,22 @@ const EasyRSAPKIDir = "EASYRSA_PKI_DIR"
 // EasyRSABatch enable batch (no-prompt) mode; set env-var to non-zero string to enable
 const EasyRSABatch = "EASYRSA_BATCH"
 
+// EasyRSAReqCN allows to change the common name
+const EasyRSAReqCN = "EASYRSA_REQ_CN"
+
+// EasyRSAKeySize key size used to generate the key pairs
+const EasyRSAKeySize = "EASYRSA_KEY_SIZE"
+
+// EasyRSACAExpire
+const EasyRSACAExpire = "EASYRSA_CA_EXPIRE"
+
 const EasyBin = "easyrsa"
 
 // EasyRSA struct
 type EasyRSA struct {
-	BinDir string // Easy-RSA top-level dir, where the easyrsa script is located.
-
+	BinDir   string // Easy-RSA top-level dir, where the easyrsa script is located.
+	KeySize  int    // Set the keysize in bits to generate
+	CAExpire int    // In how many days should the root CA key expire?
 }
 
 // NewEasyRSA returns an instance of EasyRSA
@@ -31,13 +42,39 @@ func NewEasyRSA() (*EasyRSA, error) {
 		return nil, errors.New("the path to easy-rsa directory was not define")
 	}
 
+	if os.Getenv(EasyRSAReqCN) == "" {
+		return nil, errors.New("the common name was not define")
+	}
+
+	var err error
+
+	var keySize int
+	keySize = 2048
+	if os.Getenv(EasyRSAKeySize) != "" {
+		keySize, err = strconv.Atoi(os.Getenv(EasyRSAKeySize))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var caExpire int
+	caExpire = 3650
+	if os.Getenv(EasyRSAKeySize) != "" {
+		caExpire, err = strconv.Atoi(os.Getenv(EasyRSAKeySize))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	checkEasyRSA := checkPath()
 	if checkEasyRSA != nil {
 		return nil, checkEasyRSA
 	}
 
 	easyRSA := &EasyRSA{
-		BinDir: os.Getenv(EasyRSABinDir),
+		BinDir:   os.Getenv(EasyRSABinDir),
+		KeySize:  keySize,
+		CAExpire: caExpire,
 	}
 
 	return easyRSA, nil
@@ -59,6 +96,11 @@ func (e *EasyRSA) InitPKI() error {
 	return e.run(e.getCommand(), "init-pki")
 }
 
+// BuildCA generates the Certificate Authority (CA)
+func (e *EasyRSA) BuildCA() error {
+	return e.run(e.getCommand(), "build-ca", "nopass")
+}
+
 func (e *EasyRSA) getEnvironmentVariable() []string {
 	var vars []string
 
@@ -70,7 +112,8 @@ func (e *EasyRSA) getEnvironmentVariable() []string {
 		easyrsaBatch = os.Getenv(EasyRSABatch)
 	}
 
-	vars = append(vars, fmt.Sprintf("EASYRSA_BATCH=%s", easyrsaBatch))
+	vars = append(vars, fmt.Sprintf("%s=%s", EasyRSAReqCN, os.Getenv(EasyRSAReqCN)))
+	vars = append(vars, fmt.Sprintf("%s=%s", EasyRSABatch, easyrsaBatch))
 
 	return vars
 }

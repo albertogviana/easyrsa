@@ -18,10 +18,12 @@ func TestEasyRSATestSuite(t *testing.T) {
 
 func (e *EasyRSATestSuite) Test_NewEasyRSA() {
 	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
 	easyRSA, err := NewEasyRSA()
 	e.NoError(err)
-	e.Equal(&EasyRSA{BinDir: "/tmp/easy-rsa"}, easyRSA)
+	e.Equal(&EasyRSA{BinDir: "/tmp/easy-rsa", KeySize: 2048, CAExpire: 3650}, easyRSA)
 	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAReqCN)
 }
 
 func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutEnv() {
@@ -49,6 +51,7 @@ func (e *EasyRSATestSuite) Test_NewEasyRSAScriptDoesNotExists() {
 func (e *EasyRSATestSuite) Test_InitPKI() {
 	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
 	os.Setenv(EasyRSABatch, "2")
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
 
 	dir := "/tmp/easy-rsa-pki"
 	os.Mkdir(dir, 0755)
@@ -72,5 +75,32 @@ func (e *EasyRSATestSuite) Test_InitPKI() {
 	os.Unsetenv(EasyRSABinDir)
 	os.Unsetenv(EasyRSAPKIDir)
 	os.Unsetenv(EasyRSABatch)
+	os.Unsetenv(EasyRSAReqCN)
+	os.RemoveAll(dir)
+}
+
+func (e *EasyRSATestSuite) Test_BuildCA() {
+	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
+
+	dir := "/tmp/easy-rsa-pki"
+	os.Mkdir(dir, 0755)
+	os.Setenv(EasyRSAPKIDir, dir)
+
+	easyRSA, err := NewEasyRSA()
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "ca.crt"))
+	e.NoError(err)
+
+	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAPKIDir)
+	os.Unsetenv(EasyRSAReqCN)
 	os.RemoveAll(dir)
 }
