@@ -26,25 +26,58 @@ func (e *EasyRSATestSuite) Test_NewEasyRSA() {
 	os.Unsetenv(EasyRSAReqCN)
 }
 
-func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutEnv() {
+func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutPKIDir() {
 	_, err := NewEasyRSA()
-	e.Error(err, "the path to easy-rsa directory was not define")
+	e.EqualError(err, "the path to easy-rsa directory was not define")
+}
+
+func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutCN() {
+	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
+	_, err := NewEasyRSA()
+	e.EqualError(err, "the common name was not define")
+	os.Unsetenv(EasyRSABinDir)
+}
+
+func (e *EasyRSATestSuite) Test_NewEasyRSAInvalidKeySize() {
+	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
+	os.Setenv(EasyRSAKeySize, "abcd")
+	_, err := NewEasyRSA()
+	e.EqualError(err, "strconv.Atoi: parsing \"abcd\": invalid syntax")
+	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAReqCN)
+	os.Unsetenv(EasyRSAKeySize)
+}
+
+func (e *EasyRSATestSuite) Test_NewEasyRSAInvalidCAExpiration() {
+	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
+	os.Setenv(EasyRSACAExpire, "efgh")
+	_, err := NewEasyRSA()
+	e.EqualError(err, "strconv.Atoi: parsing \"efgh\": invalid syntax")
+	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAReqCN)
+	os.Unsetenv(EasyRSACAExpire)
 }
 
 func (e *EasyRSATestSuite) Test_NewEasyRSAPathDoesNotExists() {
 	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa-invalid")
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
 	_, err := NewEasyRSA()
-	e.Error(err, "stat /tmp/easy-rsa-invalid: no such file or directory")
+	e.EqualError(err, "stat /tmp/easy-rsa-invalid: no such file or directory")
 	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAReqCN)
 }
 
 func (e *EasyRSATestSuite) Test_NewEasyRSAScriptDoesNotExists() {
 	dir := "/tmp/easy-rsa-without-bin"
 	os.Mkdir(dir, 0755)
 	os.Setenv(EasyRSABinDir, dir)
+	os.Setenv(EasyRSAReqCN, "my-test-cn")
 	_, err := NewEasyRSA()
-	e.Error(err, "stat /tmp/easy-rsa-without-bin/easyrsa: no such file or directory")
+	e.EqualError(err, "stat /tmp/easy-rsa-without-bin/easyrsa: no such file or directory")
 	os.Unsetenv(EasyRSABinDir)
+	os.Unsetenv(EasyRSAReqCN)
 	os.RemoveAll(dir)
 }
 

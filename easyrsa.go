@@ -59,8 +59,8 @@ func NewEasyRSA() (*EasyRSA, error) {
 
 	var caExpire int
 	caExpire = 3650
-	if os.Getenv(EasyRSAKeySize) != "" {
-		caExpire, err = strconv.Atoi(os.Getenv(EasyRSAKeySize))
+	if os.Getenv(EasyRSACAExpire) != "" {
+		caExpire, err = strconv.Atoi(os.Getenv(EasyRSACAExpire))
 		if err != nil {
 			return nil, err
 		}
