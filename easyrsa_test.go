@@ -160,6 +160,7 @@ func (e *EasyRSATestSuite) Test_GenReq() {
 		Organization:     "Unit Test",
 		Email:            "admin@example.com",
 		OrganizationUnit: "Test",
+		ServerName:       "server",
 	}
 
 	easyRSA, err := NewEasyRSA(config)
@@ -174,10 +175,10 @@ func (e *EasyRSATestSuite) Test_GenReq() {
 	err = easyRSA.GenReq()
 	e.NoError(err)
 
-	_, err = os.Stat(path.Join(dir, "private", "my-test-cn.key"))
+	_, err = os.Stat(path.Join(dir, "private", "server.key"))
 	e.NoError(err)
 
-	_, err = os.Stat(path.Join(dir, "reqs", "my-test-cn.req"))
+	_, err = os.Stat(path.Join(dir, "reqs", "server.req"))
 	e.NoError(err)
 
 	os.RemoveAll(dir)
@@ -197,6 +198,7 @@ func (e *EasyRSATestSuite) Test_SignReq() {
 		Organization:     "Unit Test",
 		Email:            "admin@example.com",
 		OrganizationUnit: "Test",
+		ServerName:       "server",
 	}
 
 	easyRSA, err := NewEasyRSA(config)

@@ -70,7 +70,7 @@ func (e *EasyRSA) BuildCA() error {
 
 // GenReq generates a keypair and request
 func (e *EasyRSA) GenReq() error {
-	return e.run("gen-req", e.CommonName, "nopass")
+	return e.run("gen-req", e.ServerName, "nopass")
 }
 
 // SignReq signs a request, and you can have the following types:
@@ -81,7 +81,7 @@ func (e *EasyRSA) SignReq(typeSign string) error {
 		return errors.New("invalid type, please use server or client")
 	}
 
-	return e.run("sign-req", typeSign, e.CommonName)
+	return e.run("sign-req", typeSign, e.ServerName)
 }
 
 func (e *EasyRSA) getEnvironmentVariable() []string {
