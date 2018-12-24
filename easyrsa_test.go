@@ -1,9 +1,11 @@
 package easyrsa
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -17,80 +19,85 @@ func TestEasyRSATestSuite(t *testing.T) {
 }
 
 func (e *EasyRSATestSuite) Test_NewEasyRSA() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-	easyRSA, err := NewEasyRSA()
+	expectedEasyRSA := &EasyRSA{Config{
+		BinDir:     "/tmp/easy-rsa",
+		PKIDir:     "/tmp/easy-rsa",
+		CommonName: "my-test-cn",
+		KeySize:    2048,
+		CAExpire:   3650,
+	}}
+
+	config := Config{
+		BinDir:     "/tmp/easy-rsa",
+		PKIDir:     "/tmp/easy-rsa",
+		CommonName: "my-test-cn",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
 	e.NoError(err)
-	e.Equal(&EasyRSA{BinDir: "/tmp/easy-rsa", KeySize: 2048, CAExpire: 3650}, easyRSA)
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAReqCN)
+	e.Equal(expectedEasyRSA, easyRSA)
 }
 
-func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutPKIDir() {
-	_, err := NewEasyRSA()
+func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutBinDir() {
+	_, err := NewEasyRSA(Config{})
 	e.EqualError(err, "the path to easy-rsa directory was not define")
 }
 
+func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutPKIDir() {
+	config := Config{
+		BinDir: "/tmp/easy-rsa",
+	}
+
+	_, err := NewEasyRSA(config)
+	e.EqualError(err, "the path to the pki directory was not define")
+}
+
 func (e *EasyRSATestSuite) Test_NewEasyRSAWithoutCN() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
-	_, err := NewEasyRSA()
+	config := Config{
+		BinDir: "/tmp/easy-rsa",
+		PKIDir: "/tmp/easy-rsa",
+	}
+
+	_, err := NewEasyRSA(config)
 	e.EqualError(err, "the common name was not define")
-	os.Unsetenv(EasyRSABinDir)
-}
-
-func (e *EasyRSATestSuite) Test_NewEasyRSAInvalidKeySize() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-	os.Setenv(EasyRSAKeySize, "abcd")
-	_, err := NewEasyRSA()
-	e.EqualError(err, "strconv.Atoi: parsing \"abcd\": invalid syntax")
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAReqCN)
-	os.Unsetenv(EasyRSAKeySize)
-}
-
-func (e *EasyRSATestSuite) Test_NewEasyRSAInvalidCAExpiration() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-	os.Setenv(EasyRSACAExpire, "efgh")
-	_, err := NewEasyRSA()
-	e.EqualError(err, "strconv.Atoi: parsing \"efgh\": invalid syntax")
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAReqCN)
-	os.Unsetenv(EasyRSACAExpire)
 }
 
 func (e *EasyRSATestSuite) Test_NewEasyRSAPathDoesNotExists() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa-invalid")
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-	_, err := NewEasyRSA()
+	config := Config{
+		BinDir:     "/tmp/easy-rsa-invalid",
+		PKIDir:     "/tmp/easy-rsa-invalid",
+		CommonName: "my-test-cn",
+	}
+
+	_, err := NewEasyRSA(config)
 	e.EqualError(err, "stat /tmp/easy-rsa-invalid: no such file or directory")
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAReqCN)
 }
 
 func (e *EasyRSATestSuite) Test_NewEasyRSAScriptDoesNotExists() {
 	dir := "/tmp/easy-rsa-without-bin"
 	os.Mkdir(dir, 0755)
-	os.Setenv(EasyRSABinDir, dir)
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-	_, err := NewEasyRSA()
+
+	config := Config{
+		BinDir:     "/tmp/easy-rsa-without-bin",
+		PKIDir:     "/tmp/easy-rsa",
+		CommonName: "my-test-cn",
+	}
+	_, err := NewEasyRSA(config)
 	e.EqualError(err, "stat /tmp/easy-rsa-without-bin/easyrsa: no such file or directory")
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAReqCN)
 	os.RemoveAll(dir)
 }
 
 func (e *EasyRSATestSuite) Test_InitPKI() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
-	os.Setenv(EasyRSABatch, "2")
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-
-	dir := "/tmp/easy-rsa-pki"
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
 	os.Mkdir(dir, 0755)
-	os.Setenv(EasyRSAPKIDir, dir)
 
-	easyRSA, err := NewEasyRSA()
+	config := Config{
+		BinDir:     "/tmp/easy-rsa",
+		PKIDir:     dir,
+		CommonName: "my-test-cn",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
 	e.NoError(err)
 
 	err = easyRSA.InitPKI()
@@ -105,22 +112,26 @@ func (e *EasyRSATestSuite) Test_InitPKI() {
 	err = easyRSA.InitPKI()
 	e.NoError(err)
 
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAPKIDir)
-	os.Unsetenv(EasyRSABatch)
-	os.Unsetenv(EasyRSAReqCN)
 	os.RemoveAll(dir)
 }
 
 func (e *EasyRSATestSuite) Test_BuildCA() {
-	os.Setenv(EasyRSABinDir, "/tmp/easy-rsa")
-	os.Setenv(EasyRSAReqCN, "my-test-cn")
-
-	dir := "/tmp/easy-rsa-pki"
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
 	os.Mkdir(dir, 0755)
-	os.Setenv(EasyRSAPKIDir, dir)
 
-	easyRSA, err := NewEasyRSA()
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
 	e.NoError(err)
 
 	err = easyRSA.InitPKI()
@@ -132,8 +143,82 @@ func (e *EasyRSATestSuite) Test_BuildCA() {
 	_, err = os.Stat(path.Join(dir, "ca.crt"))
 	e.NoError(err)
 
-	os.Unsetenv(EasyRSABinDir)
-	os.Unsetenv(EasyRSAPKIDir)
-	os.Unsetenv(EasyRSAReqCN)
 	os.RemoveAll(dir)
+}
+
+func (e *EasyRSATestSuite) Test_GenReq() {
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir, 0755)
+
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.NoError(err)
+
+	err = easyRSA.GenReq()
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "private", "my-test-cn.key"))
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "reqs", "my-test-cn.req"))
+	e.NoError(err)
+
+	os.RemoveAll(dir)
+}
+
+func (e *EasyRSATestSuite) Test_SignReq() {
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir, 0755)
+
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.NoError(err)
+
+	err = easyRSA.GenReq()
+	e.NoError(err)
+
+	err = easyRSA.SignReq("server")
+	e.NoError(err)
+
+	os.RemoveAll(dir)
+}
+
+func (e *EasyRSATestSuite) Test_SignReqError() {
+	easyRSA, err := NewEasyRSA(Config{})
+	err = easyRSA.SignReq("server1")
+	e.EqualError(err, "invalid type, please use server or client")
 }
