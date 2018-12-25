@@ -93,6 +93,11 @@ func (e *EasyRSA) ImportReq(requestFile, requestName string) error {
 	return e.run("import-req", requestFile, requestName)
 }
 
+// GenDH creates a strong Diffie-Hellman key to use during key exchange
+func (e *EasyRSA) GenDH() error {
+	return e.run("gen-dh")
+}
+
 func (e *EasyRSA) getEnvironmentVariable() []string {
 	var vars []string
 
