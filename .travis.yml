@@ -11,7 +11,8 @@ git:
 
 # Don't email me the results of the test runs.
 notifications:
-  email: false
+  email: true
+  on_failure: always
 
 before_script:
   - make download-easyrsa
