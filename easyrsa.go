@@ -84,7 +84,8 @@ func (e *EasyRSA) SignReq(typeSign, requestName string) error {
 	return e.run("sign-req", typeSign, requestName)
 }
 
-// GenReq generates a keypair and request
+// ImportReq import requests from external systems that are requesting
+// a signed certificate from this CA
 func (e *EasyRSA) ImportReq(requestFile, requestName string) error {
 	if _, err := os.Stat(requestFile); os.IsNotExist(err) {
 		return err
