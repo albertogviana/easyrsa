@@ -172,7 +172,8 @@ func (e *EasyRSATestSuite) Test_GenReq() {
 	err = easyRSA.BuildCA()
 	e.NoError(err)
 
-	err = easyRSA.GenReq()
+	requestName := "server"
+	err = easyRSA.GenReq(requestName)
 	e.NoError(err)
 
 	_, err = os.Stat(path.Join(dir, "private", "server.key"))
@@ -210,10 +211,11 @@ func (e *EasyRSATestSuite) Test_SignReq() {
 	err = easyRSA.BuildCA()
 	e.NoError(err)
 
-	err = easyRSA.GenReq()
+	requestName := "client1"
+	err = easyRSA.GenReq(requestName)
 	e.NoError(err)
 
-	err = easyRSA.SignReq("server")
+	err = easyRSA.SignReq("server", requestName)
 	e.NoError(err)
 
 	os.RemoveAll(dir)
@@ -221,6 +223,77 @@ func (e *EasyRSATestSuite) Test_SignReq() {
 
 func (e *EasyRSATestSuite) Test_SignReqError() {
 	easyRSA, err := NewEasyRSA(Config{})
-	err = easyRSA.SignReq("server1")
+	err = easyRSA.SignReq("server1", "test")
 	e.EqualError(err, "invalid type, please use server or client")
+}
+
+func (e *EasyRSATestSuite) Test_ImportReq() {
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir, 0755)
+
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+		ServerName:       "server",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.NoError(err)
+
+	requestName := "client1"
+	err = easyRSA.GenReq(requestName)
+	e.NoError(err)
+
+	dir2 := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir2, 0755)
+
+	config2 := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir2,
+		CommonName:       "my-test-cn2",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+		ServerName:       "server",
+	}
+
+	easyRSA2, err := NewEasyRSA(config2)
+	e.NoError(err)
+
+	err = easyRSA2.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA2.BuildCA()
+	e.NoError(err)
+
+	err = easyRSA2.ImportReq(path.Join(dir, "reqs", requestName+".req"), requestName)
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "reqs", requestName+".req"))
+	e.NoError(err)
+
+	os.RemoveAll(dir)
+	os.RemoveAll(dir2)
+}
+
+func (e *EasyRSATestSuite) Test_ImportReqError() {
+	easyRSA, err := NewEasyRSA(Config{})
+	err = easyRSA.ImportReq("/tmp/invalid", "invalid")
+	e.EqualError(err, "stat /tmp/invalid: no such file or directory")
 }

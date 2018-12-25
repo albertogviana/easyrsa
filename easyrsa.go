@@ -69,19 +69,27 @@ func (e *EasyRSA) BuildCA() error {
 }
 
 // GenReq generates a keypair and request
-func (e *EasyRSA) GenReq() error {
-	return e.run("gen-req", e.ServerName, "nopass")
+func (e *EasyRSA) GenReq(requestName string) error {
+	return e.run("gen-req", requestName, "nopass")
 }
 
 // SignReq signs a request, and you can have the following types:
 // 	- client - A TLS client, suitable for a VPN user or web browser (web client)
 // 	- server - A TLS server, suitable for a VPN or web server
-func (e *EasyRSA) SignReq(typeSign string) error {
+func (e *EasyRSA) SignReq(typeSign, requestName string) error {
 	if typeSign != "server" && typeSign != "client" {
 		return errors.New("invalid type, please use server or client")
 	}
 
-	return e.run("sign-req", typeSign, e.ServerName)
+	return e.run("sign-req", typeSign, requestName)
+}
+
+// GenReq generates a keypair and request
+func (e *EasyRSA) ImportReq(requestFile, requestName string) error {
+	if _, err := os.Stat(requestFile); os.IsNotExist(err) {
+		return err
+	}
+	return e.run("import-req", requestFile, requestName)
 }
 
 func (e *EasyRSA) getEnvironmentVariable() []string {
