@@ -235,6 +235,7 @@ func (e *EasyRSATestSuite) Test_SignReqError() {
 		ServerName:       "server",
 	}
 	easyRSA, err := NewEasyRSA(config)
+	e.NoError(err)
 	err = easyRSA.SignReq("server1", "test")
 	e.EqualError(err, "invalid type, please use server or client")
 }
@@ -305,10 +306,28 @@ func (e *EasyRSATestSuite) Test_ImportReq() {
 }
 
 func (e *EasyRSATestSuite) Test_ImportReqError() {
-	easyRSA, err := NewEasyRSA(Config{})
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir, 0755)
+
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+		ServerName:       "server",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
 	e.NoError(err)
 	err = easyRSA.ImportReq("/tmp/invalid", "invalid")
 	e.EqualError(err, "stat /tmp/invalid: no such file or directory")
+
+	os.RemoveAll(dir)
 }
 
 func (e *EasyRSATestSuite) Test_GenDH() {
