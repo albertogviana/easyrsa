@@ -4,6 +4,10 @@ download-easyrsa:
 	tar -xf /tmp/EasyRSA-nix-3.0.5.tgz -C /tmp;
 	mv /tmp/EasyRSA-3.0.5 /tmp/easy-rsa;
 
+.PHONY: download-testify
+download-testify:
+	go get -u github.com/stretchr/testify
+
 .PHONY: test
 test:
 	GOCACHE=off go test -race -v -cover -coverprofile=coverage.out ./...

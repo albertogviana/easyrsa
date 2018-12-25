@@ -15,6 +15,7 @@ notifications:
 
 before_script:
   - make download-easyrsa
+  - make download-testify
 
 script:
   -  make test
