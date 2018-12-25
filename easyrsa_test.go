@@ -305,19 +305,8 @@ func (e *EasyRSATestSuite) Test_ImportReq() {
 }
 
 func (e *EasyRSATestSuite) Test_ImportReqError() {
-	config := Config{
-		BinDir:           "/tmp/easy-rsa",
-		PKIDir:           "/tmp/easy-rsa",
-		CommonName:       "my-test-cn",
-		CountryCode:      "BR",
-		Province:         "Sao Paulo",
-		City:             "Sao Paulo",
-		Organization:     "Unit Test",
-		Email:            "admin@example.com",
-		OrganizationUnit: "Test",
-		ServerName:       "server",
-	}
-	easyRSA, err := NewEasyRSA(config)
+	easyRSA, err := NewEasyRSA(Config{})
+	e.NoError(err)
 	err = easyRSA.ImportReq("/tmp/invalid", "invalid")
 	e.EqualError(err, "stat /tmp/invalid: no such file or directory")
 }
