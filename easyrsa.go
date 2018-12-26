@@ -98,6 +98,19 @@ func (e *EasyRSA) GenDH() error {
 	return e.run("gen-dh")
 }
 
+// Revoke revokes a certificate, after you revoke the certificate it is a
+// good practive to update the CRL file, and send it to the VPN Server
+// https://github.com/OpenVPN/easy-rsa/blob/v3.0.6/doc/EasyRSA-Readme.md#revoking-and-publishing-crls
+func (e *EasyRSA) Revoke(requestName string) error {
+	return e.run("revoke", requestName)
+}
+
+// GenCRL generates a CRL suitable for publishing to systems that rely, otherwise
+// the revoke certificate will be available
+func (e *EasyRSA) GenCRL() error {
+	return e.run("gen-crl")
+}
+
 func (e *EasyRSA) getEnvironmentVariable() []string {
 	var vars []string
 

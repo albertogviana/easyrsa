@@ -364,3 +364,48 @@ func (e *EasyRSATestSuite) Test_GenDH() {
 
 	os.RemoveAll(dir)
 }
+
+func (e *EasyRSATestSuite) Test_RevokeAndGenCRL() {
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir, 0755)
+
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+		ServerName:       "server",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.NoError(err)
+
+	requestName := "client1"
+	err = easyRSA.GenReq(requestName)
+	e.NoError(err)
+
+	err = easyRSA.SignReq("client", requestName)
+	e.NoError(err)
+
+	err = easyRSA.Revoke(requestName)
+	e.NoError(err)
+
+	err = easyRSA.GenCRL()
+	e.NoError(err)
+
+	_, err = os.Stat(path.Join(dir, "crl.pem"))
+	e.NoError(err)
+
+	os.RemoveAll(dir)
+}
