@@ -146,6 +146,37 @@ func (e *EasyRSATestSuite) Test_BuildCA() {
 	os.RemoveAll(dir)
 }
 
+func (e *EasyRSATestSuite) Test_BuildCAError() {
+	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
+	os.Mkdir(dir, 0755)
+
+	config := Config{
+		BinDir:           "/tmp/easy-rsa",
+		PKIDir:           dir,
+		CommonName:       "my-test-cn",
+		CountryCode:      "BR",
+		Province:         "Sao Paulo",
+		City:             "Sao Paulo",
+		Organization:     "Unit Test",
+		Email:            "admin@example.com",
+		OrganizationUnit: "Test",
+	}
+
+	easyRSA, err := NewEasyRSA(config)
+	e.NoError(err)
+
+	err = easyRSA.InitPKI()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.NoError(err)
+
+	err = easyRSA.BuildCA()
+	e.EqualError(err, errCAAlreadyExist)
+
+	os.RemoveAll(dir)
+}
+
 func (e *EasyRSATestSuite) Test_GenReq() {
 	dir := fmt.Sprintf("/tmp/easy-rsa-pki-%d", time.Now().UnixNano())
 	os.Mkdir(dir, 0755)
